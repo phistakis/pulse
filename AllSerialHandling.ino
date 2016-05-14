@@ -5,7 +5,7 @@
 /////////  Set it to 'true' or 'false' when it's declared at start of code.  
 /////////
 
-void serialOutput(){   // Decide How To Output Serial. 
+void serialOutput(int Signal){   // Decide How To Output Serial. 
  if (serialVisual == true){  
      arduinoSerialMonitorVisual('-', Signal);   // goes to function that makes Serial Monitor Visualizer
  } else{
@@ -15,15 +15,16 @@ void serialOutput(){   // Decide How To Output Serial.
 
 
 //  Decides How To OutPut BPM and IBI Data
-void serialOutputWhenBeatHappens(){    
+void serialOutputWhenBeatHappens(int i){    
  if (serialVisual == true){            //  Code to Make the Serial Monitor Visualizer Work
     Serial.print("*** Heart-Beat Happened *** ");  //ASCII Art Madness
     Serial.print("BPM: ");
-    Serial.print(BPM);
+    Serial.print(i);
+    Serial.print(BPM[i]);
     Serial.print("  ");
  } else{
-        sendDataToSerial('B',BPM);   // send heart rate with a 'B' prefix
-        sendDataToSerial('Q',IBI);   // send time between beats with a 'Q' prefix
+        sendDataToSerial('B',BPM[i]);   // send heart rate with a 'B' prefix
+        sendDataToSerial('Q',IBI[i]);   // send time between beats with a 'Q' prefix
  }   
 }
 
@@ -38,11 +39,10 @@ void sendDataToSerial(char symbol, int data ){
 
 
 //  Code to Make the Serial Monitor Visualizer Work
-void arduinoSerialMonitorVisual(char symbol, int data ){    
+void arduinoSerialMonitorVisual(char symbol, int sensorReading ){    
   const int sensorMin = 0;      // sensor minimum, discovered through experiment
-const int sensorMax = 1024;    // sensor maximum, discovered through experiment
+  const int sensorMax = 1024;    // sensor maximum, discovered through experiment
 
-  int sensorReading = data;
   // map the sensor range to a range of 12 options:
   int range = map(sensorReading, sensorMin, sensorMax, 0, 11);
 
