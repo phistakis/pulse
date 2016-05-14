@@ -25,9 +25,10 @@ volatile int thresh[6];                // used to find instant moment of heart b
 
 // declaring local variable as global to save re-declaration time
 volatile int amp;                   // used to hold amplitude of pulse waveform, seeded
-volatile unsigned long last_beat_interval;
+volatile unsigned long last_beat_interval = 0;
 volatile int Signal;                // holds the incoming raw data
 volatile word IBI_sum, IBI_avg;
+volatile bool already_reset[6] = {false, false, false, false, false, false};
 
 void interruptSetup(){     
   // Initializes Timer2 to throw an interrupt every 2mS.
@@ -44,10 +45,13 @@ void interruptSetup(){
 
 
 void reset_all(int sensor){
+    Serial.print("reset ALL ");
+    Serial.println(sensor);
+    already_reset[sensor] = true;
     thresh[sensor] = DEFAULT_THRESH;                          // set thresh default
     P[sensor] = DEFAULT_P;                               // set P default
     T[sensor] = DEFAULT_T;                               // set T default
-    last_beat_time[sensor] = 0;          // bring the last_beat_time up to date        
+    last_beat_time[sensor] = sample_time;          // bring the last_beat_time up to date        
     live_beat_session[sensor] = false;
     for (int i=0; i<10; ++i) {
       rates[sensor][i] = 0;
@@ -66,11 +70,32 @@ ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts 
 
 
 volatile int counter = 0;
+volatile int reset_counter = 0;
+volatile bool state = false;
 
 void handle_sensor(int sensor){
-  Signal = analogRead(pulsePin[sensor]);              // read the Pulse Sensor 
+  int should_work = digitalRead(pulseSwitch[sensor]);
+  if (digitalRead(pulseSwitch[sensor])){
+    if (state == false){
+      state = true;
+      Serial.print("yes! ");
+      Serial.println(sensor);
+    }
+    Signal = analogRead(pulsePin[sensor]);              // read the Pulse Sensor 
+  } else {
+    if (state == true){
+      state = false;
+      Serial.print("no... :( ");
+      Serial.println(sensor);
+    }
+    Signal = -1;
+    if (not already_reset[sensor]){
+      reset_all(sensor);
+    }
+    return;
+  }
   //Serial.print(Signal);
-  // serialOutput(Signal);
+  //serialOutput(Signal);
 
   sample_time += 2;                         // keep track of the time in mS with this variable
   last_beat_interval = sample_time - last_beat_time[sensor];       // monitor the time since the last beat to avoid noise
@@ -83,6 +108,8 @@ void handle_sensor(int sensor){
     Serial.println(sample_time);
     Serial.println("T[sensor]");
     Serial.println(T[sensor]);
+    Serial.println("P[sensor]");
+    Serial.println(P[sensor]);
     Serial.println("thresh[sensor]");
     Serial.println(thresh[sensor]);
     Serial.println("last_beat_interval");
@@ -112,30 +139,41 @@ void handle_sensor(int sensor){
 
       // this happens in the first beat of every session
       if(not live_beat_session[sensor]) {
+        Serial.print("------------------------------------------------------------------first beat! ");
+        Serial.println(sensor);
+        Serial.println(last_beat_interval);
+        Serial.println(last_beat_time[sensor]);
+        already_reset[sensor] = false;
         live_beat_session[sensor] = true;
         sei();                               // enable interrupts again
         return;                              // IBI value is unreliable so discard it
       }
 
+      /*
       // this happens in the second beat of every session
-      if(rates[sensor][0] == rates[sensor][1] && rates[sensor][0] == 0){                        // if this is the second beat, if secondBeat == TRUE
+      if(rates[sensor][0] == rates[sensor][1] && rates[sensor][0] == 0){
+        Serial.print("------------------------------------------------------------------second beat! ");
+        Serial.println(sensor);
         for(int i=0; i<=9; i++){             // seed the running total to get a realisitic BPM at startup
           rates[sensor][i] = IBI[sensor];                      
         }
+        IBI_avg = IBI[sensor];
+      } else {
+        // keep a running total of the last 10 IBI values
+        Serial.println("third+ beat!");
+        IBI_sum = 0;                  // clear the runningTotal variable    
+
+        for(int i=0; i<9; ++i){                // shift data in the rate array
+          rates[sensor][i] = rates[sensor][i+1];                  // and drop the oldest IBI value 
+          IBI_sum += rates[sensor][i];              // add up the 9 oldest IBI values
+        }
+        rates[sensor][9] = IBI[sensor];                          // add the latest IBI to the rate array
+        IBI_sum += rates[sensor][9];                // add the latest IBI to runningTotal
+        IBI_avg = IBI_sum / 10;                     // average the last 10 IBI values 
       }
 
-      // keep a running total of the last 10 IBI values
-      IBI_sum = 0;                  // clear the runningTotal variable    
-
-      for(int i=0; i<9; ++i){                // shift data in the rate array
-        rates[sensor][i] = rates[sensor][i+1];                  // and drop the oldest IBI value 
-        IBI_sum += rates[sensor][i];              // add up the 9 oldest IBI values
-      }
-
-      rates[sensor][9] = IBI[sensor];                          // add the latest IBI to the rate array
-      IBI_sum += rates[sensor][9];                // add the latest IBI to runningTotal
-      IBI_avg = IBI_sum / 10;                     // average the last 10 IBI values 
       BPM[sensor] = 60000/IBI_avg;               // how many beats can fit into a minute? that's BPM!
+      */
       QS[sensor] = true;                              // set Quantified Self flag 
       // QS FLAG IS NOT CLEARED INSIDE THIS ISR
     }                       
@@ -150,14 +188,8 @@ void handle_sensor(int sensor){
     T[sensor] = thresh[sensor];
   }
 
-  if (last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
+  if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
     reset_all(sensor);
   }
 }
-
-  
-
-
-
-
 
