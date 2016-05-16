@@ -18,8 +18,8 @@ volatile int rates[6][10] = {                    // array to hold last ten IBI v
 };
 volatile unsigned long sample_time = 0;          // used to determine pulse timing
 volatile unsigned long last_beat_time[6] = {0, 0, 0, 0, 0, 0};           // used to find IBI
-volatile int P[6];                      // used to find peak in pulse wave, seeded
-volatile int T[6];                     // used to find trough in pulse wave, seeded
+volatile int Peak[6];                      // used to find peak in pulse wave, seeded
+volatile int T_min[6];                     // used to find trough in pulse wave, seeded
 volatile int thresh[6];                // used to find instant moment of heart beat, seeded
 
 
@@ -49,10 +49,11 @@ void reset_all(int sensor){
     Serial.println(sensor);
     already_reset[sensor] = true;
     thresh[sensor] = DEFAULT_THRESH;                          // set thresh default
-    P[sensor] = DEFAULT_P;                               // set P default
-    T[sensor] = DEFAULT_T;                               // set T default
+    Peak[sensor] = DEFAULT_P;                               // set Peak default
+    T_min[sensor] = DEFAULT_T;                               // set T default
     last_beat_time[sensor] = sample_time;          // bring the last_beat_time up to date        
     live_beat_session[sensor] = false;
+    QS[sensor] = false;                              // set Quantified Self flag 
     for (int i=0; i<10; ++i) {
       rates[sensor][i] = 0;
     }
@@ -70,12 +71,11 @@ ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts 
 
 
 volatile int counter = 0;
-volatile int reset_counter = 0;
 volatile bool state = false;
 
 void handle_sensor(int sensor){
-  int should_work = digitalRead(pulseSwitch[sensor]);
-  if (digitalRead(pulseSwitch[sensor])){
+  int should_work = true; //digitalRead(pulseSwitch[sensor]);
+  if (should_work){
     if (state == false){
       state = true;
       Serial.print("yes! ");
@@ -95,37 +95,21 @@ void handle_sensor(int sensor){
     return;
   }
   //Serial.print(Signal);
-  //serialOutput(Signal);
+  if (sample_time % 50 == 0) {
+      serialOutput(Signal);
+    }
 
   sample_time += 2;                         // keep track of the time in mS with this variable
   last_beat_interval = sample_time - last_beat_time[sensor];       // monitor the time since the last beat to avoid noise
 
-  if (++counter % 1000 == 0) {
-    Serial.println("*************** start ***************");
-    Serial.println("Signal");
-    Serial.println(Signal);
-    Serial.println("sample_time");
-    Serial.println(sample_time);
-    Serial.println("T[sensor]");
-    Serial.println(T[sensor]);
-    Serial.println("P[sensor]");
-    Serial.println(P[sensor]);
-    Serial.println("thresh[sensor]");
-    Serial.println(thresh[sensor]);
-    Serial.println("last_beat_interval");
-    Serial.println(last_beat_interval);
-    Serial.println("IBI[sensor]");
-    Serial.println(IBI[sensor]);
-    Serial.println("*************** end ***************");
-  }
- 
+
     //  find the peak and trough of the pulse wave
-  if(Signal < min(T[sensor], thresh[sensor]) && last_beat_interval > IBI[sensor]*3/5){       // avoid dichrotic noise by waiting 3/5 of last IBI
-      T[sensor] = Signal;                         // keep track of lowest point in pulse wave 
+  if(Signal < min(T_min[sensor], thresh[sensor]) && last_beat_interval > IBI[sensor]*3/5){       // avoid dichrotic noise by waiting 3/5 of last IBI
+      T_min[sensor] = Signal;                         // keep track of lowest point in pulse wave 
   }
 
-  if(Signal > max(thresh[sensor], P[sensor])){          // thresh condition helps avoid noise
-    P[sensor] = Signal;                             // P is the peak
+  if(Signal > max(thresh[sensor], Peak[sensor])){          // thresh condition helps avoid noise
+    Peak[sensor] = Signal;
   }                                        // keep track of highest point in pulse wave
 
   //  NOW IT'S TIME TO LOOK FOR THE HEART BEAT
@@ -138,7 +122,7 @@ void handle_sensor(int sensor){
       last_beat_time[sensor] = sample_time;               // keep track of time for next pulse
 
       // this happens in the first beat of every session
-      if(not live_beat_session[sensor]) {
+      if(verbose && not live_beat_session[sensor]) {
         Serial.print("------------------------------------------------------------------first beat! ");
         Serial.println(sensor);
         Serial.println(last_beat_interval);
@@ -146,6 +130,22 @@ void handle_sensor(int sensor){
         already_reset[sensor] = false;
         live_beat_session[sensor] = true;
         sei();                               // enable interrupts again
+        Serial.println("*************** start ***************");
+        Serial.println("Signal");
+        Serial.println(Signal);
+        Serial.println("sample_time");
+        Serial.println(sample_time);
+        Serial.println("T_min[sensor]");
+        Serial.println(T_min[sensor]);
+        Serial.println("Peak[sensor]");
+        Serial.println(Peak[sensor]);
+        Serial.println("thresh[sensor]");
+        Serial.println(thresh[sensor]);
+        Serial.println("last_beat_interval");
+        Serial.println(last_beat_interval);
+        Serial.println("IBI[sensor]");
+        Serial.println(IBI[sensor]);
+        Serial.println("*************** end ***************");
         return;                              // IBI value is unreliable so discard it
       }
 
@@ -175,17 +175,34 @@ void handle_sensor(int sensor){
       BPM[sensor] = 60000/IBI_avg;               // how many beats can fit into a minute? that's BPM!
       */
       QS[sensor] = true;                              // set Quantified Self flag 
+      if (verbose) {
+        Serial.print("setting QS **************");
+        Serial.println(sensor);
+        Serial.print("sample_time: ");
+        Serial.println(sample_time);
+        Serial.print("Signal: ");
+        Serial.println(Signal);
+        Serial.println("T_min[sensor]");
+        Serial.println(T_min[sensor]);
+        Serial.println("Peak[sensor]");
+        Serial.println(Peak[sensor]);
+        Serial.println("thresh[sensor]");
+        Serial.println(thresh[sensor]);
+        Serial.print("done setting QS **************");
+        Serial.println(sensor);
+        }
       // QS FLAG IS NOT CLEARED INSIDE THIS ISR
+
     }                       
   }
 
   if (Signal < thresh[sensor] && Pulse[sensor]){   // when the values are going down, the beat is over
     digitalWrite(blinkPin[sensor],LOW);            // turn off pin 13 LED
     Pulse[sensor] = false;                         // reset the Pulse flag so we can do it again
-    amp = P[sensor] - T[sensor];                           // get amplitude of the pulse wave
-    thresh[sensor] = amp/2 + T[sensor];                    // set thresh at 50% of the amplitude
-    P[sensor] = thresh[sensor];                            // reset these for next time
-    T[sensor] = thresh[sensor];
+    amp = Peak[sensor] - T_min[sensor];                           // get amplitude of the pulse wave
+    thresh[sensor] = amp/2 + T_min[sensor];                    // set thresh at 50% of the amplitude
+    Peak[sensor] = thresh[sensor];                            // reset these for next time
+    T_min[sensor] = thresh[sensor];
   }
 
   if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
