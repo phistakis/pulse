@@ -17,8 +17,10 @@ void serialOutput(int Signal){   // Decide How To Output Serial.
 //  Decides How To OutPut BPM and IBI Data
 void serialOutputWhenBeatHappens(int sensor){
  if (serialVisual == true){            //  Code to Make the Serial Monitor Visualizer Work
-    Serial.print("*** Heart-Beat Happened *** ");  //ASCII Art Madness
-    Serial.print(sensor);
+    Serial.print("*** Heart-Beat Happened *** A");  //ASCII Art Madness
+    Serial.println(pulsePin[sensor]);
+    Serial.print(" ");
+    Serial.println(sample_time);
     // Serial.print("BPM: ");
     // Serial.print(" - ");
     // Serial.println(BPM[i]);

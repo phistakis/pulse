@@ -16,7 +16,6 @@ volatile int rates[6][10] = {                    // array to hold last ten IBI v
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
-volatile unsigned long sample_time = 0;          // used to determine pulse timing
 volatile unsigned long last_beat_time[6] = {0, 0, 0, 0, 0, 0};           // used to find IBI
 volatile int Peak[6];                      // used to find peak in pulse wave, seeded
 volatile int T_min[6];                     // used to find trough in pulse wave, seeded
@@ -45,7 +44,7 @@ void interruptSetup(){
 
 
 void reset_all(int sensor){
-    Serial.print("reset ALL ");
+    Serial.print("\nreset ALL ");
     Serial.println(sensor);
     already_reset[sensor] = true;
     thresh[sensor] = DEFAULT_THRESH;                          // set thresh default
@@ -54,9 +53,11 @@ void reset_all(int sensor){
     last_beat_time[sensor] = sample_time;          // bring the last_beat_time up to date        
     live_beat_session[sensor] = false;
     QS[sensor] = false;                              // set Quantified Self flag 
+    /*
     for (int i=0; i<10; ++i) {
       rates[sensor][i] = 0;
     }
+    */
   }
 
 // THIS IS THE TIMER 2 INTERRUPT SERVICE ROUTINE. 
@@ -95,7 +96,7 @@ void handle_sensor(int sensor){
     return;
   }
   //Serial.print(Signal);
-  if (sample_time % 50 == 0) {
+  if (verbose && sample_time % 50 == 0) {
       serialOutput(Signal);
     }
 
@@ -127,9 +128,6 @@ void handle_sensor(int sensor){
         Serial.println(sensor);
         Serial.println(last_beat_interval);
         Serial.println(last_beat_time[sensor]);
-        already_reset[sensor] = false;
-        live_beat_session[sensor] = true;
-        sei();                               // enable interrupts again
         Serial.println("*************** start ***************");
         Serial.println("Signal");
         Serial.println(Signal);
@@ -149,6 +147,9 @@ void handle_sensor(int sensor){
         return;                              // IBI value is unreliable so discard it
       }
 
+    already_reset[sensor] = false;
+    live_beat_session[sensor] = true;
+    sei();                               // enable interrupts again
       /*
       // this happens in the second beat of every session
       if(rates[sensor][0] == rates[sensor][1] && rates[sensor][0] == 0){
@@ -193,18 +194,17 @@ void handle_sensor(int sensor){
         }
       // QS FLAG IS NOT CLEARED INSIDE THIS ISR
 
-    }                       
+    }
   }
 
   if (Signal < thresh[sensor] && Pulse[sensor]){   // when the values are going down, the beat is over
     digitalWrite(blinkPin[sensor],LOW);            // turn off pin 13 LED
     Pulse[sensor] = false;                         // reset the Pulse flag so we can do it again
-    amp = Peak[sensor] - T_min[sensor];                           // get amplitude of the pulse wave
-    thresh[sensor] = amp/2 + T_min[sensor];                    // set thresh at 50% of the amplitude
-    Peak[sensor] = thresh[sensor];                            // reset these for next time
-    T_min[sensor] = thresh[sensor];
+    thresh[sensor] = (Peak[sensor] + T_min[sensor]) / 2;                    // set thresh at 50% of the amplitude
+    Peak[sensor] = (Peak[sensor] +thresh[sensor]) / 2;                            // reset these for next time
+    T_min[sensor] = (T_min[sensor] + thresh[sensor]) / 2;
   }
-
+  
   if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
     reset_all(sensor);
   }
