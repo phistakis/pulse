@@ -1,3 +1,5 @@
+#include <TimerOne.h>
+
 
 /*  Pulse Sensor Amped 1.4    by Joel Murphy and Yury Gitman   http://www.pulsesensor.com
 
@@ -36,8 +38,9 @@ static boolean verbose = false;
 
 void setup(){
   for (int sensor=0; sensor<NUM_OF_SENSORS; ++sensor) {  
-    pinMode(blinkPin[sensor],OUTPUT);         // pin that will blink to your heartbeat!
-    pinMode(fade_pins[sensor], OUTPUT);          // pin that will fade to your heartbeat!
+    pinMode(blinkPin[sensor], OUTPUT);         // pin that will blink to your heartbeat!
+    pinMode(fade_pins[sensor], OUTPUT);        // pin that will fade to your heartbeat!
+    reset_all(sensor);			       /* reset sensor variables */
   }
   Serial.begin(115200);             // we agree to talk fast!
   interruptSetup();                 // sets up to read Pulse Sensor signal every 2mS 

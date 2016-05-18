@@ -29,17 +29,17 @@ volatile int Signal;                // holds the incoming raw data
 volatile word IBI_sum, IBI_avg;
 volatile bool already_reset[6] = {false, false, false, false, false, false};
 
-void interruptSetup(){     
+void interruptSetup(){    
+  /* UNUSED - this is for arduino UNO and not MEGA. TimerOne is generic 
   // Initializes Timer2 to throw an interrupt every 2mS.
   TCCR2A = 0x02;     // DISABLE PWM ON DIGITAL PINS 3 AND 11, AND GO INTO CTC MODE
   TCCR2B = 0x06;     // DON'T FORCE COMPARE, 256 PRESCALER 
   OCR2A = 0X7C;      // SET THE TOP OF THE COUNT TO 124 FOR 500Hz SAMPLE RATE
-  TIMSK2 = 0x02;     // ENABLE INTERRUPT ON MATCH BETWEEN TIMER2 AND OCR2A
-
-  for (int sensor=0; sensor < NUM_OF_SENSORS; ++sensor) {
-    reset_all(sensor);
-  }
-  sei();             // MAKE SURE GLOBAL INTERRUPTS ARE ENABLED      
+  TIMSK2 = 0x02;     // ENABLE INTERRUPT ON MATCH BETWEEN TIMER2 AND OCR2A 
+  sei();             // MAKE SURE GLOBAL INTERRUPTS ARE ENABLED  */
+  
+  Timer1.initialize(2000);        // a timer of 2000 microseconds - should be 2ms
+  Timer1.attachInterrupt(get_sensor_readings); // get readings from sensors every 2 ms   
 } 
 
 
@@ -60,15 +60,24 @@ void reset_all(int sensor){
     */
   }
 
-// THIS IS THE TIMER 2 INTERRUPT SERVICE ROUTINE. 
-// Timer 2 makes sure that we take a reading every 2 miliseconds
-ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts to 124
+  
+void get_sensor_readings(void) {
   cli();                                      // disable interrupts while we do this
   for (int sensor=0; sensor < NUM_OF_SENSORS; ++sensor) {
     handle_sensor(sensor);
   }
   sei();                                   // enable interrupts when youre done!
 }
+// THIS IS THE TIMER 2 INTERRUPT SERVICE ROUTINE. 
+// Timer 2 makes sure that we take a reading every 2 miliseconds
+/*ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts to 124
+  cli();                                      // disable interrupts while we do this
+  for (int sensor=0; sensor < NUM_OF_SENSORS; ++sensor) {
+    handle_sensor(sensor);
+  }
+  sei();                                   // enable interrupts when youre done!
+}
+*/
 
 
 volatile int counter = 0;
