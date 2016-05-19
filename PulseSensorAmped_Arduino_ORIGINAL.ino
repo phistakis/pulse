@@ -1,4 +1,6 @@
 #include <TimerOne.h>
+#include <MIDI.h>
+MIDI_CREATE_DEFAULT_INSTANCE();
 
 
 /*  Pulse Sensor Amped 1.4    by Joel Murphy and Yury Gitman   http://www.pulsesensor.com
@@ -28,6 +30,7 @@ int fade_pins[6] =   {10, 9,  6, 3, 4, 5};                  // pin to do fancy c
 bool use_switches = false;	/* should sensors be ignored if their pulse_switch is 0 */
 
 volatile boolean QS[6] = {false, false, false, false, false, false};        // becomes true when Arduoino finds a beat to signal main loop to handle leds.
+volatile boolean notes_on[6] = {false, false, false, false, false, false};        // flag for sounds per sensor
 volatile unsigned long BPM[6];                   // int that holds raw Analog in 0. updated every 2mS
 volatile unsigned long IBI[6] = {600, 600, 600, 600, 600, 600};  // int that holds the time interval between beats! Must be seeded! 
 volatile int fade_leds_power[6] = {0, 0, 0, 0, 0, 0};                 // used to fade LED on with PWM on fadePin
@@ -56,10 +59,21 @@ void setup(){
 void loop(){
   
   for (int sensor=0; sensor<NUM_OF_SENSORS; ++sensor) { 
+    if (notes_on[sensor]) {
+        // MIDI.sendNoteOff(80+sensor,0,1);
+        notes_on[sensor] = false;
+    }
+
     if (QS[sensor]){     // A Heartbeat Was Found
                          // BPM and IBI have been Determined
                          // Quantified Self "QS" true when arduino finds a heartbeat
           fade_leds_power[sensor] = 35;         // Makes the LED Fade Effect Happen
+
+
+        // MIDI.sendNoteOn(80+sensor,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
+        notes_on[sensor] = true;
+ 
+
           // Serial.println("setting to 255");
                                   // Set 'fadeRate' Variable to 255 to fade LED with pulse
           serialOutputWhenBeatHappens(sensor);   // A Beat Happened, Output that to serial.     
@@ -69,9 +83,6 @@ void loop(){
   }   
   delay(7);                             //  take a break
 }
-
-
-
 
 
 void ledsFadeToBeat(int sensor){
@@ -85,5 +96,9 @@ void ledsFadeToBeat(int sensor){
 }
 
 
-
+void MIDImessage(int command, int MIDInote, int MIDIvelocity) {
+  Serial.write(command);//send note on or note off command 
+  Serial.write(MIDInote);//send pitch data
+  Serial.write(MIDIvelocity);//send velocity data
+}
 
