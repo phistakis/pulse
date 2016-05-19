@@ -6,7 +6,7 @@
 /////////
 
 void serialOutput(int Signal){   // Decide How To Output Serial. 
- if (serialVisual == true){  
+ if (serialVisual){  
      arduinoSerialMonitorVisual('-', Signal);   // goes to function that makes Serial Monitor Visualizer
  } else{
       sendDataToSerial('S', Signal);     // goes to sendDataToSerial function
@@ -16,7 +16,7 @@ void serialOutput(int Signal){   // Decide How To Output Serial.
 
 //  Decides How To OutPut BPM and IBI Data
 void serialOutputWhenBeatHappens(int sensor){
- if (serialVisual == true){            //  Code to Make the Serial Monitor Visualizer Work
+ if (serialVisual){            //  Code to Make the Serial Monitor Visualizer Work
     Serial.print("*** Heart-Beat Happened *** A");  //ASCII Art Madness
     Serial.println(pulsePin[sensor]);
     Serial.print(" ");
@@ -25,8 +25,13 @@ void serialOutputWhenBeatHappens(int sensor){
     // Serial.print(" - ");
     // Serial.println(BPM[i]);
  } else{
-        sendDataToSerial('B',BPM[sensor]);   // send heart rate with a 'B' prefix
-        sendDataToSerial('Q',IBI[sensor]);   // send time between beats with a 'Q' prefix
+   Serial.println("A0 A1 A2 A3 A4 A5");
+   for (byte i=0; i < pulsePin[sensor]; i++) {
+     Serial.print("   ");
+   }
+   Serial.println(" x ");
+        /* sendDataToSerial('B',BPM[sensor]);   // send heart rate with a 'B' prefix */
+        /* sendDataToSerial('Q',IBI[sensor]);   // send time between beats with a 'Q' prefix */
  }   
 }
 
