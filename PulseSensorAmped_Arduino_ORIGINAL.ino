@@ -39,6 +39,7 @@ volatile unsigned long sample_time = 0;          // used to determine pulse timi
 // Regards Serial OutPut  -- Set This Up to your needs
 static boolean serialVisual = false;   // Set to 'false' by Default.  Re-set to 'true' to see Arduino Serial Monitor ASCII Visual Pulse 
 static boolean verbose = false;
+static boolean sound = true;
 
 
 void setup(){
@@ -60,7 +61,9 @@ void loop(){
   
   for (int sensor=0; sensor<NUM_OF_SENSORS; ++sensor) { 
     if (notes_on[sensor]) {
-        // MIDI.sendNoteOff(80+sensor,0,1);
+        if (sound) {
+            MIDI.sendNoteOff(70+sensor*10,0,1);
+        }
         notes_on[sensor] = false;
     }
 
@@ -70,13 +73,18 @@ void loop(){
           fade_leds_power[sensor] = 35;         // Makes the LED Fade Effect Happen
 
 
-        // MIDI.sendNoteOn(80+sensor,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
+        if (sound) {
+            MIDI.sendNoteOn(70+sensor*10,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
+        }
         notes_on[sensor] = true;
  
 
           // Serial.println("setting to 255");
                                   // Set 'fadeRate' Variable to 255 to fade LED with pulse
-          serialOutputWhenBeatHappens(sensor);   // A Beat Happened, Output that to serial.     
+
+          if (not sound && verbose) {
+              serialOutputWhenBeatHappens(sensor);   // A Beat Happened, Output that to serial.     
+          }
           QS[sensor] = false;                      // reset the Quantified Self flag for next time    
     }
     ledsFadeToBeat(sensor);                      // Makes the LED Fade Effect Happen 

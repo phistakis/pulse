@@ -27,8 +27,10 @@ void interruptSetup(){
 
 
 void reset_all(int sensor){
-    Serial.print("\nreset ALL ");
-    Serial.println("A" + String(pulsePin[sensor]));
+    if (not sound) {
+        Serial.print("\nreset ALL ");
+        Serial.println("A" + String(pulsePin[sensor]));
+    }
     already_reset[sensor] = true;
     thresh[sensor] = DEFAULT_THRESH;                          // set thresh default
     Peak[sensor] = DEFAULT_P;                               // set Peak default
@@ -92,7 +94,7 @@ void handle_sensor(int sensor){
       last_beat_time[sensor] = sample_time;               // keep track of time for next pulse
 
       QS[sensor] = true;                              // set Quantified Self flag, NOT CLEARED INSIDE THE ISR
-      if (verbose) {
+      if (not sound && verbose) {
         Serial.print("setting QS **************");
         Serial.println(sensor);
         Serial.print("sample_time: ");
@@ -121,10 +123,12 @@ void handle_sensor(int sensor){
 	already_reset[sensor] = false;
       }
     
-      if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
-	Serial.println("2.5 seconds since last beat for A" + String(pulsePin[sensor]) + " - reseting it.");
-	Serial.println("last_beat_time[A" + String(pulsePin[sensor]) +"] = " + String(last_beat_time[sensor]));
-	reset_all(sensor);
+    if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
+        if (not sound && verbose) {
+	        Serial.println("2.5 seconds since last beat for A" + String(pulsePin[sensor]) + " - reseting it.");
+	        Serial.println("last_beat_time[A" + String(pulsePin[sensor]) +"] = " + String(last_beat_time[sensor]));
+        }
+        reset_all(sensor);
       }
     }
   }
@@ -133,7 +137,9 @@ void handle_sensor(int sensor){
 void handle_disabled_sensor(int sensor) {
   /* Signal = -1; */
   if (not already_reset[sensor]){
-    Serial.println("Sensor A" + String(pulsePin[sensor]) + " is disabled - reseting it.");
+    if (not sound && verbose) {
+        Serial.println("Sensor A" + String(pulsePin[sensor]) + " is disabled - reseting it.");
+    }
     reset_all(sensor);
   }
 }
