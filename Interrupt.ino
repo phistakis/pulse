@@ -1,9 +1,7 @@
- 
-
 // const variables
-volatile const int DEFAULT_P = 512;
-volatile const int DEFAULT_T = 512;
-volatile const int DEFAULT_THRESH = 525;
+const int DEFAULT_P = 512;
+const int DEFAULT_T = 512;
+const int DEFAULT_THRESH = 525;
 
 volatile boolean Pulse[6] = {false, false, false, false, false, false};     // "True" when we're inside a single beat. (false between beats)
 
@@ -14,10 +12,8 @@ volatile int thresh[6];                // used to find instant moment of heart b
 
 
 // declaring local variable as global to save re-declaration time
-volatile int amp;                   // used to hold amplitude of pulse waveform, seeded
 volatile unsigned long last_beat_interval = 0;
 volatile int Signal;                // holds the incoming raw data
-// volatile word IBI_sum, IBI_avg;
 volatile bool already_reset[6] = {false, false, false, false, false, false};
 
 void interruptSetup(){    
@@ -36,13 +32,6 @@ void reset_all(int sensor){
     Peak[sensor] = DEFAULT_P;                               // set Peak default
     T_min[sensor] = DEFAULT_T;                               // set T default
     last_beat_time[sensor] = sample_time;          // bring the last_beat_time up to date, to avoid constant resets.
-    /* live_beat_session[sensor] = false; */
-    /* QS[sensor] = false;                              // set Quantified Self flag - will be done by user code in "loop"  */
-    /*
-    for (int i=0; i<10; ++i) {
-      rates[sensor][i] = 0;
-    }
-    */
   }
 
   
@@ -59,7 +48,7 @@ void get_sensor_readings(void) {
 volatile int counter = 0;
 
 void handle_sensor(int sensor){
-  bool sensor_enabled = not use_switches || (digitalRead(pulse_switch[sensor]) > 0);
+  bool sensor_enabled = not use_pressure_sensors || (analogRead(pressure_sensor_pin[sensor]) > 50);
   if (not sensor_enabled){
     /* sensor is disabled due to no hand on it - reset, log and return */
     handle_disabled_sensor(sensor);
@@ -123,10 +112,10 @@ void handle_sensor(int sensor){
 	already_reset[sensor] = false;
       }
     
-    if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
-        if (not sound && verbose) {
-	        Serial.println("2.5 seconds since last beat for A" + String(pulsePin[sensor]) + " - reseting it.");
-	        Serial.println("last_beat_time[A" + String(pulsePin[sensor]) +"] = " + String(last_beat_time[sensor]));
+      if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
+	if (not sound && verbose) {
+	  Serial.println("2.5 seconds since last beat for A" + String(pulsePin[sensor]) + " - reseting it.");
+	  Serial.println("last_beat_time[A" + String(pulsePin[sensor]) +"] = " + String(last_beat_time[sensor]));
         }
         reset_all(sensor);
       }
@@ -138,7 +127,7 @@ void handle_disabled_sensor(int sensor) {
   /* Signal = -1; */
   if (not already_reset[sensor]){
     if (not sound && verbose) {
-        Serial.println("Sensor A" + String(pulsePin[sensor]) + " is disabled - reseting it.");
+      Serial.println("Sensor A" + String(pulsePin[sensor]) + " is disabled - reseting it.");
     }
     reset_all(sensor);
   }

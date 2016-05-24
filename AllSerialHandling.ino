@@ -16,7 +16,7 @@ void serialOutput(int Signal){   // Decide How To Output Serial.
 
 //  Decides How To OutPut BPM and IBI Data
 void serialOutputWhenBeatHappens(int sensor){
- if (serialVisual){            //  Code to Make the Serial Monitor Visualizer Work
+ if (not sounds && serialVisual){            //  Code to Make the Serial Monitor Visualizer Work
     Serial.print("*** Heart-Beat Happened *** A");  //ASCII Art Madness
     Serial.println(pulsePin[sensor]);
     Serial.print(" ");
@@ -24,14 +24,14 @@ void serialOutputWhenBeatHappens(int sensor){
     // Serial.print("BPM: ");
     // Serial.print(" - ");
     // Serial.println(BPM[i]);
- } else{
-   Serial.println("A0 A1 A2 A3 A4 A5");
-   for (byte i=0; i < pulsePin[sensor]; i++) {
-     Serial.print("   ");
+ } else {
+   if (not sound) {
+     Serial.println("A0 A1 A2 A3 A4 A5");
+     for (byte i=0; i < pulsePin[sensor]; i++) {
+       Serial.print("   ");
+     }
+     Serial.println(" x ");
    }
-   Serial.println(" x ");
-        /* sendDataToSerial('B',BPM[sensor]);   // send heart rate with a 'B' prefix */
-        /* sendDataToSerial('Q',IBI[sensor]);   // send time between beats with a 'Q' prefix */
  }   
 }
 
@@ -39,14 +39,19 @@ void serialOutputWhenBeatHappens(int sensor){
 
 //  Sends Data to Pulse Sensor Processing App, Native Mac App, or Third-party Serial Readers. 
 void sendDataToSerial(char symbol, int data ){
-    Serial.print(symbol);
-
-    Serial.println(data);                
-  }
+  if (sound)
+    return;
+  
+  Serial.print(symbol);
+  Serial.println(data);                
+}
 
 
 //  Code to Make the Serial Monitor Visualizer Work
-void arduinoSerialMonitorVisual(char symbol, int sensorReading ){    
+void arduinoSerialMonitorVisual(char symbol, int sensorReading ){
+  if (sound)
+    return;
+  
   const int sensorMin = 0;      // sensor minimum, discovered through experiment
   const int sensorMax = 1024;    // sensor maximum, discovered through experiment
 
