@@ -17,15 +17,15 @@ https://github.com/WorldFamousElectronics/PulseSensor_Amped_Arduino/blob/master/
  ----------------------       ----------------------  ----------------------
 */
 
-const int NUM_OF_SENSORS = 3;
+const int NUM_OF_SENSORS = 6;
 
 // TODO - set all pin numbers!
 
 //  pin numbers
-const int pulsePin[6] =    {0,  1,  2, 3, 4, 5};                 // Pulse Sensor purple wire connected to analog pin 0
-const int pressure_sensor_pin[6] = {4,  4,  2, 3, 4, 5};                 // Pulse digital switch
-const int blinkPin[6] =    {13, 13, 2, 3, 4, 5};                // pin to blink led at each beat
-const int fade_pins[6] =   {10, 9,  6, 3, 4, 5};                  // pin to do fancy classy fading blink at each beat
+const int pulsePin[6] =    {5,  4,  3, 2, 1, 0};                 // Pulse Sensor purple wire connected to analog pin 0
+const int pressure_sensor_pin[6] = {10,  11,  12, 13, 14, 15};                 // Pulse digital switch
+/* const int blinkPin[6] =    {13, 13, 2, 3, 4, 5};                // pin to blink led at each beat */
+const int fade_pins[6] =   {7, 6, 5, 4, 3, 2};                  // pin to do fancy classy fading blink at each beat
 
 const bool use_pressure_sensors = false;	/* should sensors be ignored if their pressure_sensor_pin is 0 */
 
@@ -42,7 +42,7 @@ static boolean sound = true;
 
 void setup(){
   for (int sensor=0; sensor<NUM_OF_SENSORS; ++sensor) {  
-    pinMode(blinkPin[sensor], OUTPUT);         // pin that will blink to your heartbeat!
+    /* pinMode(blinkPin[sensor], OUTPUT);         // pin that will blink to your heartbeat! */
     pinMode(fade_pins[sensor], OUTPUT);        // pin that will fade to your heartbeat!
     reset_all(sensor);			       /* reset sensor variables */
   }
@@ -60,7 +60,7 @@ void loop(){
   for (int sensor=0; sensor<NUM_OF_SENSORS; ++sensor) { 
     if (notes_on[sensor]) {
         if (sound) {
-            MIDI.sendNoteOff(70+sensor*10,0,1);
+            MIDI.sendNoteOff(36 + sensor,0,1);
         }
         notes_on[sensor] = false;
     }
@@ -68,17 +68,17 @@ void loop(){
     if (QS[sensor]){     // A Heartbeat Was Found
                          // BPM and IBI have been Determined
                          // Quantified Self "QS" true when arduino finds a heartbeat
-          fade_leds_power[sensor] = 35;         // Makes the LED Fade Effect Happen
+          fade_leds_power[sensor] = 255;         // Makes the LED Fade Effect Happen
 
 	  if (sound) {
-            MIDI.sendNoteOn(70+sensor*10,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
+            MIDI.sendNoteOn(36 + sensor,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
 	  }
 	  notes_on[sensor] = true;
 
           // Serial.println("setting to 255");
                                   // Set 'fadeRate' Variable to 255 to fade LED with pulse
 
-          if (not sound && verbose) {
+          if (not sound) {
               serialOutputWhenBeatHappens(sensor);   // A Beat Happened, Output that to serial.     
           }
           QS[sensor] = false;                      // reset the Quantified Self flag for next time    

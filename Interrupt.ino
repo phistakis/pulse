@@ -79,7 +79,7 @@ void handle_sensor(int sensor){
   if (last_beat_interval > 250) {                                   // avoid high frequency noise
     if (not Pulse[sensor] && Signal > thresh[sensor]) {
       Pulse[sensor] = true;                               // set the Pulse flag when we think there is a pulse
-      digitalWrite(blinkPin[sensor], HIGH);                // turn on Blinkpin
+      /* digitalWrite(blinkPin[sensor], HIGH);                // turn on Blinkpin */
       last_beat_time[sensor] = sample_time;               // keep track of time for next pulse
 
       QS[sensor] = true;                              // set Quantified Self flag, NOT CLEARED INSIDE THE ISR
@@ -104,7 +104,7 @@ void handle_sensor(int sensor){
       
       if (Signal < thresh[sensor] && Pulse[sensor]){
 	/* when the values are going down, the beat is over */
-	digitalWrite(blinkPin[sensor], LOW);            // turn off blink pin
+	/* digitalWrite(blinkPin[sensor], LOW);            // turn off blink pin */
 	Pulse[sensor] = false;                         // reset the Pulse flag so we can do it again
 	thresh[sensor] = (Peak[sensor] + T_min[sensor]) / 2;                    // set thresh at 50% of the amplitude
 	Peak[sensor] = (Peak[sensor] +thresh[sensor]) / 2;                            // reset these for next time
