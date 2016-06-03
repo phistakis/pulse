@@ -5,18 +5,18 @@
 /////////  Set it to 'true' or 'false' when it's declared at start of code.  
 /////////
 
-void serialOutput(int Signal){   // Decide How To Output Serial. 
- if (serialVisual){  
-     arduinoSerialMonitorVisual('-', Signal);   // goes to function that makes Serial Monitor Visualizer
- } else{
-      sendDataToSerial('S', Signal);     // goes to sendDataToSerial function
- }        
+void serialOutput(int Signal) {   // Decide How To Output Serial. 
+  if (serialVisual){  
+    arduinoSerialMonitorVisual('-', Signal);   // goes to function that makes Serial Monitor Visualizer
+  } else{
+    sendDataToSerial('S', Signal);     // goes to sendDataToSerial function
+  }        
 }
 
 
 //  Decides How To OutPut BPM and IBI Data
 void serialOutputWhenBeatHappens(int sensor){
- if (not sound && serialVisual){            //  Code to Make the Serial Monitor Visualizer Work
+  if (not sound && serialVisual){            //  Code to Make the Serial Monitor Visualizer Work
     Serial.print("*** Heart-Beat Happened *** A");  //ASCII Art Madness
     Serial.println(pulsePin[sensor]);
     Serial.print(" ");
@@ -24,15 +24,15 @@ void serialOutputWhenBeatHappens(int sensor){
     // Serial.print("BPM: ");
     // Serial.print(" - ");
     // Serial.println(BPM[i]);
- } else {
-   if (not sound) {
-     Serial.println("A0 A1 A2 A3 A4 A5");
-     for (byte i=0; i < pulsePin[sensor]; i++) {
-       Serial.print("   ");
-     }
-     Serial.println(" x ");
-   }
- }   
+  } else {
+    if (not sound) {
+      Serial.println("A0 A1 A2 A3 A4 A5");
+      for (byte i=0; i < pulsePin[sensor]; i++) {
+	Serial.print("   ");
+      }
+      Serial.println(" x ");
+    }
+  }   
 }
 
 
