@@ -2,6 +2,7 @@
 const int DEFAULT_P = 512;
 const int DEFAULT_T = 512;
 const int DEFAULT_THRESH = 525;
+const int MIN_BEAT_INTERVAL = 330;
 
 volatile boolean Pulse[6] = {false, false, false, false, false, false};     // "True" when we're inside a single beat. (false between beats)
 
@@ -48,13 +49,12 @@ void get_sensor_readings(void) {
 volatile int counter = 0;
 
 void handle_sensor(int sensor){
-  bool sensor_enabled = not use_pressure_sensors || (analogRead(pressure_sensor_pin[sensor]) > 50);
+  bool sensor_enabled = not use_pressure_sensors || (analogRead(pressure_sensor_pin[sensor]) > 80);
   if (not sensor_enabled){
     /* sensor is disabled due to no hand on it - reset, log and return */
     handle_disabled_sensor(sensor);
     return;
   }
-  
   Signal = analogRead(pulsePin[sensor]);              // read the Pulse Sensor 
   //Serial.print(Signal);
   if (verbose && sample_time % 50 == 0) { /* last sample time, but who cares */
@@ -76,7 +76,7 @@ void handle_sensor(int sensor){
 
   //  NOW IT'S TIME TO LOOK FOR THE HEART BEAT
   // signal surges up in value every time there is a pulse
-  if (last_beat_interval > 250) {                                   // avoid high frequency noise
+  if (last_beat_interval > MIN_BEAT_INTERVAL) {                                   // avoid high frequency noise
     if (not Pulse[sensor] && Signal > thresh[sensor]) {
       Pulse[sensor] = true;                               // set the Pulse flag when we think there is a pulse
       /* digitalWrite(blinkPin[sensor], HIGH);                // turn on Blinkpin */
@@ -84,39 +84,36 @@ void handle_sensor(int sensor){
 
       QS[sensor] = true;                              // set Quantified Self flag, NOT CLEARED INSIDE THE ISR
       if (not sound && verbose) {
-        Serial.print("setting QS **************");
-        Serial.println(sensor);
-        Serial.print("sample_time: ");
-        Serial.println(sample_time);
-        Serial.print("Signal: ");
-        Serial.println(Signal);
-        Serial.println("T_min[sensor]");
-        Serial.println(T_min[sensor]);
-        Serial.println("Peak[sensor]");
-        Serial.println(Peak[sensor]);
-        Serial.println("thresh[sensor]");
+        Serial.print("setting QS for sensor ");
+        Serial.print(String(pulsePin[sensor]));
+        Serial.print(" - Signal: ");
+        Serial.print(Signal);
+        Serial.print(" - T_min[sensor]");
+        Serial.print(T_min[sensor]);
+        Serial.print(" - Peak[sensor]");
+        Serial.print(Peak[sensor]);
+        Serial.print(" - thresh[sensor]");
         Serial.println(thresh[sensor]);
-        Serial.print("done setting QS **************");
-        Serial.println(sensor);
       }
+      
     } else {
       /* no pulse identified right now */
       
       if (Signal < thresh[sensor] && Pulse[sensor]){
-	/* when the values are going down, the beat is over */
-	/* digitalWrite(blinkPin[sensor], LOW);            // turn off blink pin */
-	Pulse[sensor] = false;                         // reset the Pulse flag so we can do it again
-	thresh[sensor] = (Peak[sensor] + T_min[sensor]) / 2;                    // set thresh at 50% of the amplitude
-	Peak[sensor] = (Peak[sensor] +thresh[sensor]) / 2;                            // reset these for next time
-	T_min[sensor] = (T_min[sensor] + thresh[sensor]) / 2;
-	already_reset[sensor] = false;
+      	/* when the values are going down, the beat is over */
+      	/* digitalWrite(blinkPin[sensor], LOW);            // turn off blink pin */
+      	Pulse[sensor] = false;                         // reset the Pulse flag so we can do it again
+      	thresh[sensor] = (Peak[sensor] + T_min[sensor]) / 2;                    // set thresh at 50% of the amplitude
+      	Peak[sensor] = (Peak[sensor] +thresh[sensor]) / 2;                            // reset these for next time
+      	T_min[sensor] = (T_min[sensor] + thresh[sensor]) / 2;
+      	already_reset[sensor] = false;
       }
     
       if (not already_reset[sensor] && last_beat_interval > 2500){                           // if 2.5 seconds go by without a beat
-	if (not sound && verbose) {
-	  Serial.println("2.5 seconds since last beat for A" + String(pulsePin[sensor]) + " - reseting it.");
-	  Serial.println("last_beat_time[A" + String(pulsePin[sensor]) +"] = " + String(last_beat_time[sensor]));
-        }
+      	if (not sound && verbose) {
+      	  Serial.println("2.5 seconds since last beat for A" + String(pulsePin[sensor]) + " - reseting it.");
+      	  Serial.println("last_beat_time[A" + String(pulsePin[sensor]) +"] = " + String(last_beat_time[sensor]));
+              }
         reset_all(sensor);
       }
     }

@@ -17,17 +17,15 @@ https://github.com/WorldFamousElectronics/PulseSensor_Amped_Arduino/blob/master/
  ----------------------       ----------------------  ----------------------
 */
 
-const int NUM_OF_SENSORS = 6;
-
-// TODO - set all pin numbers!
+const int NUM_OF_SENSORS = 1;
 
 //  pin numbers
 const int pulsePin[6] =    {5,  4,  3, 2, 1, 0};                 // Pulse Sensor purple wire connected to analog pin 0
-const int pressure_sensor_pin[6] = {10,  11,  12, 13, 14, 15};                 // Pulse digital switch
+const int pressure_sensor_pin[6] = {1,  11,  12, 13, 14, 15};                 // Pulse digital switch
 /* const int blinkPin[6] =    {13, 13, 2, 3, 4, 5};                // pin to blink led at each beat */
-const int fade_pins[6] =   {7, 6, 5, 4, 3, 2};                  // pin to do fancy classy fading blink at each beat
+const int fade_pins[6] =   {12, 6, 5, 4, 3, 2};                  // pin to do fancy classy fading blink at each beat
 
-const bool use_pressure_sensors = false;	/* should sensors be ignored if their pressure_sensor_pin is 0 */
+const bool use_pressure_sensors = true;	/* should sensors be ignored if their pressure_sensor_pin is 0 */
 
 volatile boolean QS[6] = {false, false, false, false, false, false};        // becomes true when Arduoino finds a beat to signal main loop to handle leds.
 volatile boolean notes_on[6] = {false, false, false, false, false, false};        // flag for sounds per sensor
