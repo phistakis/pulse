@@ -49,7 +49,7 @@ void get_sensor_readings(void) {
 volatile int counter = 0;
 
 void handle_sensor(int sensor){
-  bool sensor_enabled = not use_pressure_sensors || (analogRead(pressure_sensor_pin[sensor]) > 80);
+  bool sensor_enabled = not use_pressure_sensors || (analogRead(pressure_sensor_pin[sensor]) > PRESSURE_SENSOR_ZERO[sensor]+80);
   if (not sensor_enabled){
     /* sensor is disabled due to no hand on it - reset, log and return */
     handle_disabled_sensor(sensor);
